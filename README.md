@@ -1,6 +1,6 @@
 # oBundleWebDevRequest
 
-# My Test Project
+# My BigCommerce Requested Project
 
 This project is a demonstration of my skills in [specific technologies or platforms]. It showcases [brief overview].
 
