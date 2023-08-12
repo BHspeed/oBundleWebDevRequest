@@ -39,181 +39,44 @@ Here  is the Card.html my addition
                     </div>
 
      -------------------------------------------------------------------------------------------------------------
-This is my code from Category.html 
+     Category.html 
+The category.html file containts quite a bit of changes and additions, 
 
-<!-- PROJEST REQUEST, 2 BUTTONS ADD AND DELETE FROM CART. -->
-The buttons will only apper for the Special Items Category, Which is what I assumed the directions wanted, it did not specify. 
+Button Rendering:
 
+The code checks if the current page is part of the "Special Items" category.
+If it is, two buttons are displayed:
+The "Add All To Cart" button.
+The "Remove All Items" button (which is initially hidden).
+JavaScript Enhancements:
 
-{{#if category}}
-  {{#contains category.name 'Special Items'}}
-    <!-- Add All To Cart Button -->
-    <button id="addAllToCartButton">Add All To Cart</button>
-    <!-- End of Add All To Cart Button -->
+storefrontCall Function:
 
-    <!-- Initially hidden button -->
-    <button id="specialButton" style="display: none;">Remove All Items</button>
-  {{/contains}}
-{{/if}}
+A function to interact with the BigCommerce API. It makes different types of requests (like GET, POST) to given endpoints and can also send data.
+createCart Function:
 
+This function attempts to add items to the cart. If it's successful, you're notified that products were added. If there's an issue, you'll get an alert indicating the problem.
+checkCartItems Function:
 
-<script>
+This function checks if there are items in the cart, either digital or physical.
+updateButtonDisplay Function:
 
-const storefrontCall = async (endpoint, method, body = null) => {
-    const url = `https://obundle-demo-request.mybigcommerce.com/api/storefront${endpoint}`;
-    const headers = {
-        'Content-Type': 'application/json',
-    };
+Based on whether there are items in the cart, it decides if the "Remove All Items" button should be visible or hidden.
+DOMContentLoaded Event:
 
-    const config = {
-        method,
-        headers
-    };
+Once the web page is fully loaded:
+It checks if there are items in the cart and decides the visibility of the "Remove All Items" button.
+If the "Add All To Cart" button is clicked, it fetches all product IDs from the page and tries to add them to the cart. After adding, it rechecks the cart status and updates the button visibility.
+'specialButton' Click Event:
 
-    if (body && (method !== 'GET' && method !== 'HEAD')) {
-        config.body = JSON.stringify(body);
-    }
-
-    try {
-        const response = await fetch(url, config);
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error(error);
-        return null;
-    }
-};
-
-function createCart(route, cartItems) {
-  return fetch(route, {
-    method: "POST",
-    credentials: "same-origin",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(cartItems),
-  })
-  .then(response => response.json())
-  .then(result => {
-      console.log(result);
-      if(result.status && result.status === 422) {
-        alert("Failed to add to cart. Please check the request.");
-      } else {
-        alert('All products added to cart!');
-      }
-  })
-  .catch(error => console.error(error));
-};
+If you click on the "Remove All Items" button:
+It fetches the current cart and all its items.
+For every item in the cart, it sends a request to remove that item.
+After removing items, it updates the button visibility.
 
 
-function checkCartItems() {
-  const route = '/api/storefront/carts';  // URL to get the current cart's content
-
-  return fetch(route, {
-    method: "GET",
-    credentials: "same-origin",
-    headers: {
-      "Content-Type": "application/json"
-    },
-  })
-  .then(response => response.json())
-  .then(carts => {
-      // If there's at least one cart and it has items, return true
-      const hasPhysicalItems = carts.length > 0 && carts[0].lineItems && carts[0].lineItems.physicalItems && carts[0].lineItems.physicalItems.length > 0;
-      const hasDigitalItems = carts.length > 0 && carts[0].lineItems && carts[0].lineItems.digitalItems && carts[0].lineItems.digitalItems.length > 0;
-      
-      return hasPhysicalItems || hasDigitalItems; // Return true if either physical or digital items are present
-  })
-  .catch(error => {
-      console.error("Error checking cart items:", error);
-      return false;
-  });
-}
-function updateButtonDisplay(hasItems) {
-    const button = document.getElementById('specialButton');
-    if(hasItems) {
-        button.style.display = 'block';  // Show the button
-    } else {
-        button.style.display = 'none';  // Hide the button
-    }
-}
-
-
-document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOMContentLoaded triggered");  // Ensure this log appears
-
-    // Check cart items once the document has been fully loaded.
-    checkCartItems().then(hasItems => {
-        updateButtonDisplay(hasItems);
-    });
-
-    // Event listener for the add all to cart button
-    document.getElementById('addAllToCartButton').addEventListener('click', () => {
-        const productIds = [...document.querySelectorAll('[data-entity-id]')].map(element => parseInt(element.getAttribute('data-entity-id')));
-
-        const lineItems = productIds.map(id => ({ productId: id, quantity: 1 }));
-
-        createCart(`/api/storefront/carts`, {
-            "lineItems": lineItems
-        }).then(() => {
-            // Check cart items again after items have been added to the cart.
-            checkCartItems().then(hasItems => {
-                updateButtonDisplay(hasItems);
-            });
-        });
-    });
-});
-//Event listener for the delete all from cart button
-document.getElementById('specialButton').addEventListener('click', async () => {
-    // First, fetch the current cart and its items
-    const route = '/api/storefront/carts';
-
-    try {
-        const carts = await fetch(route, {
-            method: "GET",
-            credentials: "same-origin",
-            headers: {
-                "Content-Type": "application/json"
-            }
-        }).then(response => response.json());
-
-        if (!carts.length) {
-            console.log('No cart found!');
-            return;
-        }
-
-        const cartId = carts[0].id;
-        const items = carts[0].lineItems.physicalItems.concat(carts[0].lineItems.digitalItems); // Get both physical and digital items
-        
-        // For each item in the cart, send a DELETE request
-        for (let item of items) { 
-            await fetch(`https://obundle-demo-request.mybigcommerce.com/api/storefront/carts/${cartId}/items/${item.id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-        }
-
-        alert('All items removed from cart!');
-
-        // Re-check the cart items and update button display after deletion
-        checkCartItems().then(hasItems => {
-            updateButtonDisplay(hasItems);
-        });
-
-    } catch (err) {
-        console.error('Error removing items from cart:', err);
-    }
-});
-
-
-</script>
 -----------------------------------------------------------------------------
+
 - **URL**: [Your Bigcommerce Store URL](https://obundle-demo-request.mybigcommerce.com/)
 
 Please note that the preview code may change, so if there are any issues accessing the store, kindly contact me.
