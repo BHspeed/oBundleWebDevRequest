@@ -1,0 +1,245 @@
+---
+category:
+    shop_by_price: true
+    products:
+        limit: {{theme_settings.categorypage_products_per_page}}
+---
+{{#if customer}}
+<div class="customer-banner">
+    <h2>Welcome back, {{customer.first_name}} {{customer.last_name}}!</h2>
+    <p>Email: {{customer.email}}</p>
+    <p>Phone: {{customer.phone}}</p>
+    <!-- Add more customer details if needed -->
+</div>
+{{/if}}
+
+
+{{inject "categoryProductsPerPage" theme_settings.categorypage_products_per_page}}
+{{#partial "head"}}
+    {{#if pagination.category.previous}}
+        <link rel="prev" href="{{pagination.category.previous}}">
+    {{/if}}
+    {{#if pagination.category.next}}
+        <link rel="next" href="{{pagination.category.next}}">
+    {{/if}}
+{{/partial}}
+
+{{#partial "page"}}
+
+{{> components/common/breadcrumbs breadcrumbs=breadcrumbs}}
+{{#if category.image}}
+    {{> components/common/responsive-img
+        image=category.image
+        fallback_size=theme_settings.zoom_size
+        lazyload=theme_settings.lazyload_mode
+        class="category-header-image"
+    }}
+{{/if}}
+{{#unless theme_settings.hide_category_page_heading }}
+    <h1 class="page-heading">{{category.name}}</h1>
+    {{{region name="category_below_header"}}}
+{{/unless}}
+{{{category.description}}}
+
+
+
+
+<div class="page">
+   
+    {{#if category.faceted_search_enabled}}
+        <aside class="page-sidebar" id="faceted-search-container">
+            {{> components/category/sidebar}}
+        </aside>
+    {{else if category.subcategories}}
+        <aside class="page-sidebar" id="faceted-search-container">
+            {{> components/category/sidebar}}
+        </aside>
+    {{else if category.shop_by_price}}
+        {{#if theme_settings.shop_by_price_visibility}}
+             <aside class="page-sidebar" id="faceted-search-container">
+                {{> components/category/sidebar}}
+            </aside>
+        {{/if}}
+    {{/if}}
+    
+    
+<!-- PROJEST REQUEST, 2 BUTTONS ADD AND DELETE FROM CART. -->
+
+{{#if category}}
+  {{#contains category.name 'Special Items'}}
+    <!-- Add All To Cart Button -->
+    <button id="addAllToCartButton">Add All To Cart</button>
+    <!-- End of Add All To Cart Button -->
+
+    <!-- Initially hidden button -->
+    <button id="specialButton" style="display: none;">Remove All Items</button>
+  {{/contains}}
+{{/if}}
+
+<script>
+
+const storefrontCall = async (endpoint, method, body = null) => {
+    const url = `https://obundle-demo-request.mybigcommerce.com/api/storefront${endpoint}`;
+    const headers = {
+        'Content-Type': 'application/json',
+    };
+
+    const config = {
+        method,
+        headers
+    };
+
+    if (body && (method !== 'GET' && method !== 'HEAD')) {
+        config.body = JSON.stringify(body);
+    }
+
+    try {
+        const response = await fetch(url, config);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error(error);
+        return null;
+    }
+};
+
+function createCart(route, cartItems) {
+  return fetch(route, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(cartItems),
+  })
+  .then(response => response.json())
+  .then(result => {
+      console.log(result);
+      if(result.status && result.status === 422) {
+        alert("Failed to add to cart. Please check the request.");
+      } else {
+        alert('All products added to cart!');
+      }
+  })
+  .catch(error => console.error(error));
+};
+
+
+function checkCartItems() {
+  const route = '/api/storefront/carts';  // URL to get the current cart's content
+
+  return fetch(route, {
+    method: "GET",
+    credentials: "same-origin",
+    headers: {
+      "Content-Type": "application/json"
+    },
+  })
+  .then(response => response.json())
+  .then(carts => {
+      // If there's at least one cart and it has items, return true
+      const hasPhysicalItems = carts.length > 0 && carts[0].lineItems && carts[0].lineItems.physicalItems && carts[0].lineItems.physicalItems.length > 0;
+      const hasDigitalItems = carts.length > 0 && carts[0].lineItems && carts[0].lineItems.digitalItems && carts[0].lineItems.digitalItems.length > 0;
+      
+      return hasPhysicalItems || hasDigitalItems; // Return true if either physical or digital items are present
+  })
+  .catch(error => {
+      console.error("Error checking cart items:", error);
+      return false;
+  });
+}
+function updateButtonDisplay(hasItems) {
+    const button = document.getElementById('specialButton');
+    if(hasItems) {
+        button.style.display = 'block';  // Show the button
+    } else {
+        button.style.display = 'none';  // Hide the button
+    }
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("DOMContentLoaded triggered");  // Ensure this log appears
+
+    // Check cart items once the document has been fully loaded.
+    checkCartItems().then(hasItems => {
+        updateButtonDisplay(hasItems);
+    });
+
+    // Event listener for the add all to cart button
+    document.getElementById('addAllToCartButton').addEventListener('click', () => {
+        const productIds = [...document.querySelectorAll('[data-entity-id]')].map(element => parseInt(element.getAttribute('data-entity-id')));
+
+        const lineItems = productIds.map(id => ({ productId: id, quantity: 1 }));
+
+        createCart(`/api/storefront/carts`, {
+            "lineItems": lineItems
+        }).then(() => {
+            // Check cart items again after items have been added to the cart.
+            checkCartItems().then(hasItems => {
+                updateButtonDisplay(hasItems);
+            });
+        });
+    });
+});
+//Event listener for the delete all from cart button
+document.getElementById('specialButton').addEventListener('click', async () => {
+    // First, fetch the current cart and its items
+    const route = '/api/storefront/carts';
+
+    try {
+        const carts = await fetch(route, {
+            method: "GET",
+            credentials: "same-origin",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        }).then(response => response.json());
+
+        if (!carts.length) {
+            console.log('No cart found!');
+            return;
+        }
+
+        const cartId = carts[0].id;
+        const items = carts[0].lineItems.physicalItems.concat(carts[0].lineItems.digitalItems); // Get both physical and digital items
+        
+        // For each item in the cart, send a DELETE request
+        for (let item of items) { 
+            await fetch(`https://obundle-demo-request.mybigcommerce.com/api/storefront/carts/${cartId}/items/${item.id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+        }
+
+        alert('All items removed from cart!');
+
+        // Re-check the cart items and update button display after deletion
+        checkCartItems().then(hasItems => {
+            updateButtonDisplay(hasItems);
+        });
+
+    } catch (err) {
+        console.error('Error removing items from cart:', err);
+    }
+});
+
+
+</script>
+
+
+        {{> components/category/product-listing}}
+        {{{region name="category_below_content"}}}
+        
+    </div>
+</div>
+
+
+{{/partial}}
+{{> layout/base}}
