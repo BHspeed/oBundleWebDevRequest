@@ -10,39 +10,6 @@ This project is a demonstration of my skills in [specific technologies or platfo
 - https://github.com/BHspeed/oBundleWebDevRequest/blob/925748394bb4018835dc432eadfdf656580ae0b1/card.html#L61-L91)
 - https://github.com/BHspeed/oBundleWebDevRequest/blob/925748394bb4018835dc432eadfdf656580ae0b1/category.html#L66-L234
 - ------------------------------------------------------------------------------------------------------------------
-Here  is the Card.html my addition 
-
--        <!--Added the primary and secondary image on hover-->
-            <div>
-                            <a href="{{url}}"
-                                   class="card-figure__link"
-                                   aria-label="{{> components/products/product-info}}"
-                                   data-event-type="product-click"
-                                >
-                    <div class="card-img-container">
-                        {{#if name '===' 'Special Item'}}
-                            {{> components/common/responsive-img
-                                image=image
-                                class="card-image primary-image"
-                                fallback_size=theme_settings.productgallery_size
-                                lazyload=theme_settings.lazyload_mode
-                                default_image=theme_settings.default_image_product
-                            }}
-                            <img src="https://cdn11.bigcommerce.com/s-bejdogp7fk/images/stencil/1280x1280/products/112/376/Item1__44728.1691789586.jpg?c=1" alt="Secondary Image" class="card-image secondary-image" />
-                        {{else}}
-                            {{> components/common/responsive-img
-                                image=image
-                                class="card-image"
-                                fallback_size=theme_settings.productgallery_size
-                                lazyload=theme_settings.lazyload_mode
-                                default_image=theme_settings.default_image_product
-                            }}
-                        {{/if}}
-                    </div>
-
-     -------------------------------------------------------------------------------------------------------------
-     Category.html 
-The category.html file containts quite a bit of changes and additions, 
 
 Button Rendering:
 
