@@ -6,7 +6,10 @@ This project is a demonstration of my skills in [specific technologies or platfo
 
 ## Bigcommerce Store Preview
 
-- **Preview Code**: PreviewCodeHere
+- **Preview Code**:
+- https://github.com/BHspeed/oBundleWebDevRequest/blob/925748394bb4018835dc432eadfdf656580ae0b1/_productView.scss#L13-L61
+- https://github.com/BHspeed/oBundleWebDevRequest/blob/925748394bb4018835dc432eadfdf656580ae0b1/card.html#L61-L91)
+- https://github.com/BHspeed/oBundleWebDevRequest/blob/925748394bb4018835dc432eadfdf656580ae0b1/category.html#L66-L234
 - ------------------------------------------------------------------------------------------------------------------
 Here  is the Card.html my addition 
 
